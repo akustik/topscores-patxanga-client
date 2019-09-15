@@ -7,6 +7,7 @@
  */
 
 import React, {Component} from 'react';
+
 import {
   Alert,
   Button,
@@ -17,6 +18,8 @@ import {
   Text,
   View
 } from 'react-native';
+
+import Slider from '@react-native-community/slider';
 
 const PLAYERS = [
   "Guillem",
@@ -41,11 +44,22 @@ const INITIAL_STATE = {
 
 class Team extends Component {
   render() {
+    const teamName = this.props.element.name;
     const combineStyles = StyleSheet.flatten(
         [styles.teamContainer, this.props.style]);
     return (
         <View style={combineStyles}>
-          <Text>{this.props.element.name}: {this.props.element.score}</Text>
+          <Text>{teamName}: {this.props.element.score}</Text>
+          <Slider
+              minimumValue={0}
+              maximumValue={15}
+              step={1}
+              minimumTrackTintColor="#FFFFFF"
+              maximumTrackTintColor="#000000"
+              onValueChange={
+                (score) => this.props.onChangeScore(teamName, score)
+              }
+          />
           <FlatList
               data={this.props.element.members}
               renderItem={
@@ -55,11 +69,11 @@ class Team extends Component {
           />
 
           <Picker
-              onValueChange={(itemValue, itemIndex) =>
-                  this.props.onAddMember(this.props.element.name, itemValue)
+              onValueChange={(itemValue) =>
+                  this.props.onAddMember(teamName, itemValue)
               }>
             <Picker.Item label="Add a team member" value=""/>
-            {PLAYERS.map((item, index) => {
+            {PLAYERS.map((item) => {
               return (<Picker.Item label={item} value={item} key={item}/>)
             })}
           </Picker>
@@ -75,6 +89,7 @@ class Game extends Component {
 
     this.addMember = this.addMember.bind(this)
     this.reset = this.reset.bind(this)
+    this.changeScore = this.changeScore.bind(this)
   }
 
   state = INITIAL_STATE;
@@ -84,6 +99,15 @@ class Game extends Component {
       let updated = {};
       updated[team] = teamFor(team, previous[team].score,
           previous[team].members.concat(name));
+      return updated;
+    })
+  }
+
+  changeScore(team, score) {
+    this.setState((previous) => {
+      let updated = {};
+      updated[team] = teamFor(team, score,
+          previous[team].members);
       return updated;
     })
   }
@@ -100,8 +124,12 @@ class Game extends Component {
     return (
         <SafeAreaView style={{flex: 1}}>
           <View style={{flex: 14}}>
-            <Team element={this.state.blaus} onAddMember={this.addMember} style={{backgroundColor: 'powderblue'}}/>
-            <Team element={this.state.grocs} onAddMember={this.addMember} style={{backgroundColor: 'lightyellow'}}/>
+            <Team element={this.state.blaus} onAddMember={this.addMember}
+                  onChangeScore={this.changeScore}
+                  style={{backgroundColor: 'powderblue'}}/>
+            <Team element={this.state.grocs} onAddMember={this.addMember}
+                  onChangeScore={this.changeScore}
+                  style={{backgroundColor: 'lightyellow'}}/>
           </View>
           <View style={styles.actionsContainer}>
             <View style={styles.buttonContainer}>
