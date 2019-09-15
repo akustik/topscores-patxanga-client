@@ -16,11 +16,20 @@ import Slider from '@react-native-community/slider';
 const SECRET = 'base64-basic-auth-token';
 
 const PLAYERS = [
-  "Guillem",
-  "Ramon",
   "Albert",
   "Antonio",
-  "Oriol"
+  "Arnau",
+  "Erik",
+  "Fede",
+  "Fran",
+  "Guillem",
+  "Jordi",
+  "Marc",
+  "Ramon",
+  "Ricard",
+  "Sergi",
+  "Uri",
+  "Victor",
 ];
 
 const teamFor = (team, score, players) => {
@@ -84,6 +93,7 @@ class Game extends Component {
     this.addPlayer = this.addPlayer.bind(this);
     this.reset = this.reset.bind(this);
     this.changeScore = this.changeScore.bind(this);
+    this.save = this.save.bind(this);
   }
 
   state = INITIAL_STATE;
@@ -115,11 +125,11 @@ class Game extends Component {
         'Authorization': 'Basic ' + SECRET
       },
       body: JSON.stringify({
-        teams: this.state,
+        teams: [this.state.blaus, this.state.grocs],
         tournament: '2019-2020'
       }),
     }).then((responseJson) => {
-      if(responseJson.status !== 200) {
+      if (responseJson.status !== 200) {
         Alert.alert('Failed', JSON.stringify(responseJson));
       } else {
         Alert.alert('Game added');
