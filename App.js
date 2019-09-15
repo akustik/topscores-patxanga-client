@@ -21,6 +21,8 @@ import {
 
 import Slider from '@react-native-community/slider';
 
+const SECRET = 'base64-basic-auth-token';
+
 const PLAYERS = [
   "Guillem",
   "Ramon",
@@ -29,11 +31,11 @@ const PLAYERS = [
   "Oriol"
 ];
 
-const teamFor = (name, score, members) => {
+const teamFor = (team, score, players) => {
   return {
-    name: name,
+    team: team,
     score: score || 0,
-    members: members || []
+    players: players || []
   }
 };
 
@@ -44,7 +46,7 @@ const INITIAL_STATE = {
 
 class Team extends Component {
   render() {
-    const teamName = this.props.element.name;
+    const teamName = this.props.element.team;
     const combineStyles = StyleSheet.flatten(
         [styles.teamContainer, this.props.style]);
     return (
@@ -61,7 +63,7 @@ class Team extends Component {
               }
           />
           <FlatList
-              data={this.props.element.members}
+              data={this.props.element.players}
               renderItem={
                 ({item}) => <Text> * {item} </Text>
               }
@@ -70,9 +72,9 @@ class Team extends Component {
 
           <Picker
               onValueChange={(itemValue) =>
-                  this.props.onAddMember(teamName, itemValue)
+                  this.props.onAddPlayer(teamName, itemValue)
               }>
-            <Picker.Item label="Add a team member" value=""/>
+            <Picker.Item label="Add a team player" value=""/>
             {PLAYERS.map((item) => {
               return (<Picker.Item label={item} value={item} key={item}/>)
             })}
@@ -85,20 +87,20 @@ class Team extends Component {
 class Game extends Component {
 
   constructor(props) {
-    super(props)
+    super(props);
 
-    this.addMember = this.addMember.bind(this)
-    this.reset = this.reset.bind(this)
-    this.changeScore = this.changeScore.bind(this)
+    this.addPlayer = this.addPlayer.bind(this);
+    this.reset = this.reset.bind(this);
+    this.changeScore = this.changeScore.bind(this);
   }
 
   state = INITIAL_STATE;
 
-  addMember(team, name) {
+  addPlayer(team, player) {
     this.setState((previous) => {
       let updated = {};
       updated[team] = teamFor(team, previous[team].score,
-          previous[team].members.concat(name));
+          previous[team].players.concat(player));
       return updated;
     })
   }
@@ -107,13 +109,32 @@ class Game extends Component {
     this.setState((previous) => {
       let updated = {};
       updated[team] = teamFor(team, score,
-          previous[team].members);
+          previous[team].players);
       return updated;
     })
   }
 
   save() {
-    Alert.alert('Simple Button pressed')
+    fetch('https://peaceful-sierra-85970.herokuapp.com/games/simple/add', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': 'Basic ' + SECRET
+      },
+      body: JSON.stringify({
+        teams: this.state,
+        tournament: '2019-2020'
+      }),
+    }).then((responseJson) => {
+      if(responseJson.status !== 200) {
+        Alert.alert('Failed', JSON.stringify(responseJson));
+      } else {
+        Alert.alert('Game added');
+      }
+    }).catch((error) => {
+      Alert.alert('Failed', JSON.stringify(error));
+    });
   }
 
   reset() {
@@ -124,10 +145,10 @@ class Game extends Component {
     return (
         <SafeAreaView style={{flex: 1}}>
           <View style={{flex: 14}}>
-            <Team element={this.state.blaus} onAddMember={this.addMember}
+            <Team element={this.state.blaus} onAddPlayer={this.addPlayer}
                   onChangeScore={this.changeScore}
                   style={{backgroundColor: 'powderblue'}}/>
-            <Team element={this.state.grocs} onAddMember={this.addMember}
+            <Team element={this.state.grocs} onAddPlayer={this.addPlayer}
                   onChangeScore={this.changeScore}
                   style={{backgroundColor: 'lightyellow'}}/>
           </View>
