@@ -47,6 +47,28 @@ const INITIAL_STATE = {
   availablePlayers: PLAYERS
 };
 
+class TeamMember extends Component {
+  render() {
+    const teamName = this.props.team;
+    const playerName = this.props.member.name;
+    const playerScore = this.props.member.score;
+
+    if(playerScore) {
+      return (
+          <View>
+            <Text> => {playerName} (score: {playerScore})</Text>
+          </View>
+      )
+    } else {
+      return (
+          <View>
+            <Text> => {playerName}</Text>
+            <Button title="+" onPress={() => this.props.onIncPlayerScore(teamName, playerName)}/>
+          </View>
+      )
+    }
+  }
+}
 
 class Team extends Component {
   render() {
@@ -69,7 +91,12 @@ class Team extends Component {
           <FlatList
               data={this.props.element.players}
               renderItem={
-                ({item}) => <Text> * {item.name} </Text>
+                ({item}) => <TeamMember
+                    member={item}
+                    onIncPlayerScore={this.props.onIncPlayerScore}
+                    team={teamName}>
+
+                </TeamMember>
               }
               keyExtractor={item => item.name}
           />
@@ -128,6 +155,10 @@ class Game extends Component {
           previous[team].players);
       return updated;
     })
+  }
+
+  incPlayerScore(team, player) {
+    Alert.alert(team + player);
   }
 
   updateServerStatus() {
@@ -191,11 +222,13 @@ class Game extends Component {
                   availablePlayers={this.state.availablePlayers}
                   onAddPlayer={this.addPlayer}
                   onChangeScore={this.changeScore}
+                  onPlayerIncScore={this.incPlayerScore}
                   style={{backgroundColor: 'powderblue'}}/>
             <Team element={this.state.grocs}
                   availablePlayers={this.state.availablePlayers}
                   onAddPlayer={this.addPlayer}
                   onChangeScore={this.changeScore}
+                  onIncPlayerScore={this.incPlayerScore}
                   style={{backgroundColor: 'lightyellow'}}/>
           </View>
           <View style={styles.actionsContainer}>
