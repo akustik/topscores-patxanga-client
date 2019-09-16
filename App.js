@@ -51,23 +51,18 @@ class TeamMember extends Component {
   render() {
     const teamName = this.props.team;
     const playerName = this.props.member.name;
-    const playerGoals = this.props.member.goals;
+    const playerGoals = this.props.member.goals || 0;
 
-    if(playerGoals) {
-      return (
-          <View>
-            <Text> => {playerName} (score: {playerGoals})</Text>
+    return (
+        <View style={styles.actionsContainer}>
+          <View style={styles.playerContainer}>
+            <Text style={styles.playerText}>{'\u2022 ' + playerName} ({playerGoals})</Text>
+          </View>
+          <View style={styles.playerContainer}>
             <Button title="+" onPress={() => this.props.onIncPlayerGoals(teamName, playerName)}/>
           </View>
-      )
-    } else {
-      return (
-          <View>
-            <Text> => {playerName}</Text>
-            <Button title="+" onPress={() => this.props.onIncPlayerGoals(teamName, playerName)}/>
-          </View>
-      )
-    }
+        </View>
+    )
   }
 }
 
@@ -78,39 +73,47 @@ class Team extends Component {
         [styles.teamContainer, this.props.style]);
     return (
         <View style={combineStyles}>
-          <Text>{teamName}: {this.props.element.score}</Text>
-          <Slider
-              minimumValue={0}
-              maximumValue={15}
-              step={1}
-              minimumTrackTintColor="#FFFFFF"
-              maximumTrackTintColor="#000000"
-              onValueChange={
-                (score) => this.props.onChangeScore(teamName, score)
-              }
-          />
-          <FlatList
-              data={this.props.element.players}
-              renderItem={
-                ({item}) => <TeamMember
-                    member={item}
-                    onIncPlayerGoals={this.props.onIncPlayerGoals}
-                    team={teamName}>
+          <View style={styles.actionsContainer}>
+            <View style={styles.teamTitleElement}>
+              <Text style={styles.titleText}>{teamName} ({this.props.element.score})</Text>
+            </View>
+            <View style={styles.teamTitleElement}>
+              <Slider
+                  minimumValue={0}
+                  maximumValue={15}
+                  step={1}
+                  minimumTrackTintColor="#FFFFFF"
+                  maximumTrackTintColor="#000000"
+                  onValueChange={
+                    (score) => this.props.onChangeScore(teamName, score)
+                  }
+              />
+            </View>
+          </View>
+          <View style={{flex: 6}}>
+            <FlatList
+                data={this.props.element.players}
+                renderItem={
+                  ({item}) => <TeamMember
+                      member={item}
+                      onIncPlayerGoals={this.props.onIncPlayerGoals}
+                      team={teamName}>
 
-                </TeamMember>
-              }
-              keyExtractor={item => item.name}
-          />
+                  </TeamMember>
+                }
+                keyExtractor={item => item.name}
+            />
 
-          <Picker
-              onValueChange={(itemValue) =>
-                  this.props.onAddPlayer(teamName, itemValue)
-              }>
-            <Picker.Item label="Add a team player" value=""/>
-            {this.props.availablePlayers.map((item) => {
-              return (<Picker.Item label={item} value={item} key={item}/>)
-            })}
-          </Picker>
+            <Picker
+                onValueChange={(itemValue) =>
+                    this.props.onAddPlayer(teamName, itemValue)
+                }>
+              <Picker.Item label="Add a team player" value=""/>
+              {this.props.availablePlayers.map((item) => {
+                return (<Picker.Item label={item} value={item} key={item}/>)
+              })}
+            </Picker>
+          </View>
         </View>
     )
   }
@@ -204,18 +207,44 @@ class Game extends Component {
     });
   }
 
+  toParty(element) {
+    let party = {
+      team: {
+        name: element.team
+      },
+      score: element.score,
+      members: element.players.map((p) => {
+        return {name: p.name};
+      }),
+      metrics: element.players.map((p) => {
+        return {name: 'goals' + ':' + p.name, value: p.goals}
+      })
+    };
+
+    return party;
+  }
+
+  toGame() {
+    let game = {
+      tournament: '2019-2020',
+      parties: [
+          this.toParty(this.state.blaus),
+          this.toParty(this.state.grocs)
+      ]
+    };
+
+    return game;
+  }
+
   save() {
-    fetch('https://peaceful-sierra-85970.herokuapp.com/games/simple/add', {
+    fetch('https://peaceful-sierra-85970.herokuapp.com/games/add', {
       method: 'POST',
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
         'Authorization': 'Basic ' + SECRET
       },
-      body: JSON.stringify({
-        teams: [this.state.blaus, this.state.grocs],
-        tournament: '2019-2020'
-      }),
+      body: JSON.stringify(this.toGame()),
     }).then((responseJson) => {
       if (responseJson.status !== 200) {
         Alert.alert('Failed', JSON.stringify(responseJson));
@@ -288,7 +317,24 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flex: 1,
     padding: 20
-  }
+  },
+  teamTitleElement: {
+    flex: 1,
+    padding: 2
+  },
+  playerContainer: {
+    flex: 1,
+    padding: 2
+  },
+  titleText: {
+    fontFamily: 'Cochin',
+    fontSize: 18,
+    fontWeight: 'bold'
+  },
+  playerText: {
+    fontFamily: 'Cochin',
+    fontSize: 16
+  },
 });
 
 const App = () => {
