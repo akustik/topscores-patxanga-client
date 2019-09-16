@@ -42,7 +42,8 @@ const teamFor = (team, score, players) => {
 
 const INITIAL_STATE = {
   blaus: teamFor('blaus'),
-  grocs: teamFor('grocs')
+  grocs: teamFor('grocs'),
+  serverStatus: 'DOWN'
 };
 
 class Team extends Component {
@@ -94,9 +95,16 @@ class Game extends Component {
     this.reset = this.reset.bind(this);
     this.changeScore = this.changeScore.bind(this);
     this.save = this.save.bind(this);
+    this.updateServerStatus = this.updateServerStatus.bind(this);
   }
 
   state = INITIAL_STATE;
+
+  componentDidMount() {
+    setInterval(() => {
+      this.updateServerStatus();
+    }, 5000);
+  }
 
   addPlayer(team, player) {
     this.setState((previous) => {
@@ -114,6 +122,34 @@ class Game extends Component {
           previous[team].players);
       return updated;
     })
+  }
+
+  updateServerStatus() {
+    fetch('https://peaceful-sierra-85970.herokuapp.com/health', {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json'
+      }
+    }).then((responseJson) => {
+      if (responseJson.status !== 200) {
+        Alert.alert("failed");
+        this.setState(() => {
+          return {serverStatus: 'DOWN'};
+        })
+      } else {
+        responseJson.json().then((json) => {
+          this.setState(() => {
+            return {serverStatus: json.status};
+          });
+        });
+      }
+    }).catch((error) => {
+      this.setState(() => {
+        Alert.alert("error");
+        return {serverStatus: 'DOWN'};
+      })
+    });
   }
 
   save() {
@@ -163,7 +199,7 @@ class Game extends Component {
             </View>
             <View style={styles.buttonContainer}>
               <Button
-                  title="Submit"
+                  title={this.state.serverStatus === 'UP'? 'Submit': 'Waiting'}
                   onPress={this.save}
               />
             </View>
