@@ -51,19 +51,20 @@ class TeamMember extends Component {
   render() {
     const teamName = this.props.team;
     const playerName = this.props.member.name;
-    const playerScore = this.props.member.score;
+    const playerGoals = this.props.member.goals;
 
-    if(playerScore) {
+    if(playerGoals) {
       return (
           <View>
-            <Text> => {playerName} (score: {playerScore})</Text>
+            <Text> => {playerName} (score: {playerGoals})</Text>
+            <Button title="+" onPress={() => this.props.onIncPlayerGoals(teamName, playerName)}/>
           </View>
       )
     } else {
       return (
           <View>
             <Text> => {playerName}</Text>
-            <Button title="+" onPress={() => this.props.onIncPlayerScore(teamName, playerName)}/>
+            <Button title="+" onPress={() => this.props.onIncPlayerGoals(teamName, playerName)}/>
           </View>
       )
     }
@@ -93,7 +94,7 @@ class Team extends Component {
               renderItem={
                 ({item}) => <TeamMember
                     member={item}
-                    onIncPlayerScore={this.props.onIncPlayerScore}
+                    onIncPlayerGoals={this.props.onIncPlayerGoals}
                     team={teamName}>
 
                 </TeamMember>
@@ -125,6 +126,7 @@ class Game extends Component {
     this.changeScore = this.changeScore.bind(this);
     this.save = this.save.bind(this);
     this.updateServerStatus = this.updateServerStatus.bind(this);
+    this.incPlayerGoals = this.incPlayerGoals.bind(this);
   }
 
   state = INITIAL_STATE;
@@ -157,8 +159,23 @@ class Game extends Component {
     })
   }
 
-  incPlayerScore(team, player) {
-    Alert.alert(team + player);
+  incPlayerGoals(team, player) {
+    this.setState((previous) => {
+      let updated = {};
+      updated[team] = teamFor(team, previous[team].score,
+          previous[team].players.map((p => {
+            if(p.name === player) {
+              //TODO: Clone
+              return {
+                name: player,
+                goals: (p.goals || 0) + 1
+              }
+            } else {
+              return p;
+            }
+          })));
+      return updated;
+    })
   }
 
   updateServerStatus() {
@@ -222,13 +239,13 @@ class Game extends Component {
                   availablePlayers={this.state.availablePlayers}
                   onAddPlayer={this.addPlayer}
                   onChangeScore={this.changeScore}
-                  onPlayerIncScore={this.incPlayerScore}
+                  onIncPlayerGoals={this.incPlayerGoals}
                   style={{backgroundColor: 'powderblue'}}/>
             <Team element={this.state.grocs}
                   availablePlayers={this.state.availablePlayers}
                   onAddPlayer={this.addPlayer}
                   onChangeScore={this.changeScore}
-                  onIncPlayerScore={this.incPlayerScore}
+                  onIncPlayerGoals={this.incPlayerGoals}
                   style={{backgroundColor: 'lightyellow'}}/>
           </View>
           <View style={styles.actionsContainer}>
