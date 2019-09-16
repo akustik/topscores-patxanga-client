@@ -43,8 +43,10 @@ const teamFor = (team, score, players) => {
 const INITIAL_STATE = {
   blaus: teamFor('blaus'),
   grocs: teamFor('grocs'),
-  serverStatus: 'DOWN'
+  serverStatus: 'DOWN',
+  availablePlayers: PLAYERS
 };
+
 
 class Team extends Component {
   render() {
@@ -67,9 +69,9 @@ class Team extends Component {
           <FlatList
               data={this.props.element.players}
               renderItem={
-                ({item}) => <Text> * {item} </Text>
+                ({item}) => <Text> * {item.name} </Text>
               }
-              keyExtractor={item => item}
+              keyExtractor={item => item.name}
           />
 
           <Picker
@@ -77,7 +79,7 @@ class Team extends Component {
                   this.props.onAddPlayer(teamName, itemValue)
               }>
             <Picker.Item label="Add a team player" value=""/>
-            {PLAYERS.map((item) => {
+            {this.props.availablePlayers.map((item) => {
               return (<Picker.Item label={item} value={item} key={item}/>)
             })}
           </Picker>
@@ -111,7 +113,10 @@ class Game extends Component {
     this.setState((previous) => {
       let updated = {};
       updated[team] = teamFor(team, previous[team].score,
-          previous[team].players.concat(player));
+          previous[team].players.concat({
+            name: player
+          }));
+      updated.availablePlayers = previous.availablePlayers.filter((v) => { return v !== player} );
       return updated;
     })
   }
@@ -134,7 +139,6 @@ class Game extends Component {
       }
     }).then((responseJson) => {
       if (responseJson.status !== 200) {
-        Alert.alert("failed");
         this.setState(() => {
           return {serverStatus: 'DOWN'};
         })
@@ -147,7 +151,6 @@ class Game extends Component {
       }
     }).catch((error) => {
       this.setState(() => {
-        Alert.alert("error");
         return {serverStatus: 'DOWN'};
       })
     });
@@ -184,10 +187,14 @@ class Game extends Component {
     return (
         <SafeAreaView style={{flex: 1}}>
           <View style={{flex: 14}}>
-            <Team element={this.state.blaus} onAddPlayer={this.addPlayer}
+            <Team element={this.state.blaus}
+                  availablePlayers={this.state.availablePlayers}
+                  onAddPlayer={this.addPlayer}
                   onChangeScore={this.changeScore}
                   style={{backgroundColor: 'powderblue'}}/>
-            <Team element={this.state.grocs} onAddPlayer={this.addPlayer}
+            <Team element={this.state.grocs}
+                  availablePlayers={this.state.availablePlayers}
+                  onAddPlayer={this.addPlayer}
                   onChangeScore={this.changeScore}
                   style={{backgroundColor: 'lightyellow'}}/>
           </View>
