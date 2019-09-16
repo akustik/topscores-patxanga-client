@@ -103,7 +103,8 @@ class Game extends Component {
   componentDidMount() {
     setInterval(() => {
       this.updateServerStatus();
-    }, 5000);
+    }, 60000);
+    this.updateServerStatus();
   }
 
   addPlayer(team, player) {
@@ -197,9 +198,11 @@ class Game extends Component {
                       onPress={this.reset}
               />
             </View>
+
             <View style={styles.buttonContainer}>
               <Button
-                  title={this.state.serverStatus === 'UP'? 'Submit': 'Waiting'}
+                  disabled={this.state.serverStatus !== 'UP'}
+                  title={this.state.serverStatus === 'UP'? 'Submit': 'Loading...'}
                   onPress={this.save}
               />
             </View>
