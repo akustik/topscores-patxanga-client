@@ -42,8 +42,29 @@ const teamFor = (team, score, players) => {
 
 const INITIAL_STATE = {
   blaus: teamFor('blaus'),
-  grocs: teamFor('grocs')
+  grocs: teamFor('grocs'),
+  serverStatus: 'DOWN',
+  availablePlayers: PLAYERS
 };
+
+class TeamMember extends Component {
+  render() {
+    const teamName = this.props.team;
+    const playerName = this.props.member.name;
+    const playerGoals = this.props.member.goals || 0;
+
+    return (
+        <View style={styles.actionsContainer}>
+          <View style={styles.playerContainer}>
+            <Text style={styles.playerText}>{'\u2022 ' + playerName} ({playerGoals})</Text>
+          </View>
+          <View style={styles.playerContainer}>
+            <Button title="+" onPress={() => this.props.onIncPlayerGoals(teamName, playerName)}/>
+          </View>
+        </View>
+    )
+  }
+}
 
 class Team extends Component {
   render() {
@@ -52,34 +73,47 @@ class Team extends Component {
         [styles.teamContainer, this.props.style]);
     return (
         <View style={combineStyles}>
-          <Text>{teamName}: {this.props.element.score}</Text>
-          <Slider
-              minimumValue={0}
-              maximumValue={15}
-              step={1}
-              minimumTrackTintColor="#FFFFFF"
-              maximumTrackTintColor="#000000"
-              onValueChange={
-                (score) => this.props.onChangeScore(teamName, score)
-              }
-          />
-          <FlatList
-              data={this.props.element.players}
-              renderItem={
-                ({item}) => <Text> * {item} </Text>
-              }
-              keyExtractor={item => item}
-          />
+          <View style={styles.actionsContainer}>
+            <View style={styles.teamTitleElement}>
+              <Text style={styles.titleText}>{teamName} ({this.props.element.score})</Text>
+            </View>
+            <View style={styles.teamTitleElement}>
+              <Slider
+                  minimumValue={0}
+                  maximumValue={15}
+                  step={1}
+                  minimumTrackTintColor="#FFFFFF"
+                  maximumTrackTintColor="#000000"
+                  onValueChange={
+                    (score) => this.props.onChangeScore(teamName, score)
+                  }
+              />
+            </View>
+          </View>
+          <View style={{flex: 6}}>
+            <FlatList
+                data={this.props.element.players}
+                renderItem={
+                  ({item}) => <TeamMember
+                      member={item}
+                      onIncPlayerGoals={this.props.onIncPlayerGoals}
+                      team={teamName}>
 
-          <Picker
-              onValueChange={(itemValue) =>
-                  this.props.onAddPlayer(teamName, itemValue)
-              }>
-            <Picker.Item label="Add a team player" value=""/>
-            {PLAYERS.map((item) => {
-              return (<Picker.Item label={item} value={item} key={item}/>)
-            })}
-          </Picker>
+                  </TeamMember>
+                }
+                keyExtractor={item => item.name}
+            />
+
+            <Picker
+                onValueChange={(itemValue) =>
+                    this.props.onAddPlayer(teamName, itemValue)
+                }>
+              <Picker.Item label="Add a team player" value=""/>
+              {this.props.availablePlayers.map((item) => {
+                return (<Picker.Item label={item} value={item} key={item}/>)
+              })}
+            </Picker>
+          </View>
         </View>
     )
   }
@@ -94,15 +128,27 @@ class Game extends Component {
     this.reset = this.reset.bind(this);
     this.changeScore = this.changeScore.bind(this);
     this.save = this.save.bind(this);
+    this.updateServerStatus = this.updateServerStatus.bind(this);
+    this.incPlayerGoals = this.incPlayerGoals.bind(this);
   }
 
   state = INITIAL_STATE;
+
+  componentDidMount() {
+    setInterval(() => {
+      this.updateServerStatus();
+    }, 60000);
+    this.updateServerStatus();
+  }
 
   addPlayer(team, player) {
     this.setState((previous) => {
       let updated = {};
       updated[team] = teamFor(team, previous[team].score,
-          previous[team].players.concat(player));
+          previous[team].players.concat({
+            name: player
+          }));
+      updated.availablePlayers = previous.availablePlayers.filter((v) => { return v !== player} );
       return updated;
     })
   }
@@ -116,18 +162,89 @@ class Game extends Component {
     })
   }
 
+  incPlayerGoals(team, player) {
+    this.setState((previous) => {
+      let updated = {};
+      updated[team] = teamFor(team, previous[team].score,
+          previous[team].players.map((p => {
+            if(p.name === player) {
+              //TODO: Clone
+              return {
+                name: player,
+                goals: (p.goals || 0) + 1
+              }
+            } else {
+              return p;
+            }
+          })));
+      return updated;
+    })
+  }
+
+  updateServerStatus() {
+    fetch('https://peaceful-sierra-85970.herokuapp.com/health', {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json'
+      }
+    }).then((responseJson) => {
+      if (responseJson.status !== 200) {
+        this.setState(() => {
+          return {serverStatus: 'DOWN'};
+        })
+      } else {
+        responseJson.json().then((json) => {
+          this.setState(() => {
+            return {serverStatus: json.status};
+          });
+        });
+      }
+    }).catch((error) => {
+      this.setState(() => {
+        return {serverStatus: 'DOWN'};
+      })
+    });
+  }
+
+  toParty(element) {
+    let party = {
+      team: {
+        name: element.team
+      },
+      score: element.score,
+      members: element.players.map((p) => {
+        return {name: p.name};
+      }),
+      metrics: element.players.map((p) => {
+        return {name: 'goals' + ':' + p.name, value: p.goals}
+      })
+    };
+
+    return party;
+  }
+
+  toGame() {
+    let game = {
+      tournament: '2019-2020',
+      parties: [
+          this.toParty(this.state.blaus),
+          this.toParty(this.state.grocs)
+      ]
+    };
+
+    return game;
+  }
+
   save() {
-    fetch('https://peaceful-sierra-85970.herokuapp.com/games/simple/add', {
+    fetch('https://peaceful-sierra-85970.herokuapp.com/games/add', {
       method: 'POST',
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
         'Authorization': 'Basic ' + SECRET
       },
-      body: JSON.stringify({
-        teams: [this.state.blaus, this.state.grocs],
-        tournament: '2019-2020'
-      }),
+      body: JSON.stringify(this.toGame()),
     }).then((responseJson) => {
       if (responseJson.status !== 200) {
         Alert.alert('Failed', JSON.stringify(responseJson));
@@ -147,11 +264,17 @@ class Game extends Component {
     return (
         <SafeAreaView style={{flex: 1}}>
           <View style={{flex: 14}}>
-            <Team element={this.state.blaus} onAddPlayer={this.addPlayer}
+            <Team element={this.state.blaus}
+                  availablePlayers={this.state.availablePlayers}
+                  onAddPlayer={this.addPlayer}
                   onChangeScore={this.changeScore}
+                  onIncPlayerGoals={this.incPlayerGoals}
                   style={{backgroundColor: 'powderblue'}}/>
-            <Team element={this.state.grocs} onAddPlayer={this.addPlayer}
+            <Team element={this.state.grocs}
+                  availablePlayers={this.state.availablePlayers}
+                  onAddPlayer={this.addPlayer}
                   onChangeScore={this.changeScore}
+                  onIncPlayerGoals={this.incPlayerGoals}
                   style={{backgroundColor: 'lightyellow'}}/>
           </View>
           <View style={styles.actionsContainer}>
@@ -161,9 +284,11 @@ class Game extends Component {
                       onPress={this.reset}
               />
             </View>
+
             <View style={styles.buttonContainer}>
               <Button
-                  title="Submit"
+                  disabled={this.state.serverStatus !== 'UP'}
+                  title={this.state.serverStatus === 'UP'? 'Submit': 'Loading...'}
                   onPress={this.save}
               />
             </View>
@@ -192,7 +317,24 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flex: 1,
     padding: 20
-  }
+  },
+  teamTitleElement: {
+    flex: 1,
+    padding: 2
+  },
+  playerContainer: {
+    flex: 1,
+    padding: 2
+  },
+  titleText: {
+    fontFamily: 'Cochin',
+    fontSize: 18,
+    fontWeight: 'bold'
+  },
+  playerText: {
+    fontFamily: 'Cochin',
+    fontSize: 16
+  },
 });
 
 const App = () => {
