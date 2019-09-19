@@ -8,7 +8,8 @@ import {
   SafeAreaView,
   StyleSheet,
   Text,
-  View
+  View,
+  Linking
 } from 'react-native';
 
 import Slider from '@react-native-community/slider';
@@ -258,6 +259,11 @@ class Game extends Component {
 
   reset() {
     this.setState(() => INITIAL_STATE)
+    this.updateServerStatus();
+  }
+
+  open() {
+    Linking.openURL('https://peaceful-sierra-85970.herokuapp.com');
   }
 
   render() {
@@ -278,6 +284,13 @@ class Game extends Component {
                   style={{backgroundColor: 'lightyellow'}}/>
           </View>
           <View style={styles.actionsContainer}>
+            <View style={styles.buttonContainer}>
+              <Button style={styles.button}
+                      title="Web"
+                      onPress={this.open}
+              />
+            </View>
+
             <View style={styles.buttonContainer}>
               <Button style={styles.button}
                       title="Reset"
