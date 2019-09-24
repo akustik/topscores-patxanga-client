@@ -13,9 +13,7 @@ import {
 } from 'react-native';
 
 import Slider from '@react-native-community/slider';
-
-const SECRET = 'base64-basic-auth-token';
-const URL = 'https://peaceful-sierra-85970.herokuapp.com/';
+import {SECRET, URL} from '../config/config';
 
 const PLAYERS = [
   "Albert",
