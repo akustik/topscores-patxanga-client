@@ -1,6 +1,15 @@
 import React, {Component} from 'react';
 
-import {Alert, Button, Linking, SafeAreaView, View} from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Button,
+  FlatList,
+  Linking,
+  SafeAreaView,
+  Text,
+  View
+} from 'react-native';
 
 import {SECRET, URL} from '../config/config';
 import Team from './team'
@@ -42,11 +51,13 @@ class Game extends Component {
     this.changeScore = this.changeScore.bind(this);
     this.list = this.list.bind(this);
     this.save = this.save.bind(this);
+    this.changePage = this.changePage.bind(this);
     this.updateServerStatus = this.updateServerStatus.bind(this);
     this.incPlayerGoals = this.incPlayerGoals.bind(this);
   }
 
   state = {
+    page: 'loading',
     games: [],
     serverStatus: 'DOWN',
     blaus: teamFor('blaus'),
@@ -82,6 +93,12 @@ class Game extends Component {
           previous[team].players);
       return updated;
     })
+  }
+
+  changePage(page) {
+    this.setState(() => {
+      return {page: page}
+    });
   }
 
   incPlayerGoals(team, player) {
@@ -158,7 +175,38 @@ class Game extends Component {
     return game;
   }
 
+  toDate(epoch) {
+    return new Date(epoch).toLocaleString("es-ES", {timeZone: "Europe/Madrid"})
+  }
+
+  toGameEntry(item) {
+    let blaus = item.parties.find(p => p.team.name === 'blaus');
+    let grocs = item.parties.find(p => p.team.name === 'grocs');
+
+    let backgroundColor = styles.neutralBackground;
+
+    if(blaus.score > grocs.score) {
+      backgroundColor = styles.blausBackground;
+    } else if (grocs.score > blaus.score) {
+      backgroundColor = styles.grocsBackground;
+    }
+
+    return (
+        <View style={[styles.teamContainer, backgroundColor]}>
+          <Text>{item.tournament + ' | ' + this.toDate(
+              item.timestamp)}</Text>
+          <Text>
+            {blaus.team.name + ' ('
+            + blaus.score + ') - '
+            + grocs.team.name + ' ('
+            + grocs.score + ')'}
+          </Text>
+        </View>
+    );
+  }
+
   save() {
+    this.changePage('loading');
     fetch(URL + 'games/add', {
       method: 'POST',
       headers: {
@@ -170,11 +218,14 @@ class Game extends Component {
     }).then((responseJson) => {
       if (responseJson.status !== 200) {
         Alert.alert('Failed', JSON.stringify(responseJson));
+        this.changePage('add');
       } else {
-        Alert.alert('Game added');
+        this.reset();
+        this.list();
       }
     }).catch((error) => {
       Alert.alert('Failed', JSON.stringify(error));
+      this.changePage('add');
     });
   }
 
@@ -194,7 +245,8 @@ class Game extends Component {
           this.setState(() => {
             return {
               games: jsonArray,
-              serverStatus: 'UP'
+              serverStatus: 'UP',
+              page: 'list'
             };
           });
         });
@@ -215,52 +267,85 @@ class Game extends Component {
   }
 
   open() {
-    Linking.openURL('https://peaceful-sierra-85970.herokuapp.com');
+    Linking.openURL(URL);
   }
 
   render() {
-    return (
-        <SafeAreaView style={{flex: 1}}>
-          <View style={{flex: 14}}>
-            <Team element={this.state.blaus}
-                  availablePlayers={this.state.availablePlayers}
-                  onAddPlayer={this.addPlayer}
-                  onChangeScore={this.changeScore}
-                  onIncPlayerGoals={this.incPlayerGoals}
-                  style={{backgroundColor: 'powderblue'}}/>
-            <Team element={this.state.grocs}
-                  availablePlayers={this.state.availablePlayers}
-                  onAddPlayer={this.addPlayer}
-                  onChangeScore={this.changeScore}
-                  onIncPlayerGoals={this.incPlayerGoals}
-                  style={{backgroundColor: 'lightyellow'}}/>
-          </View>
-          <View style={styles.actionsContainer}>
-            <View style={styles.buttonContainer}>
-              <Button style={styles.button}
-                      title="Web"
-                      onPress={this.open}
+    if (this.state.page === 'list') {
+      return (
+          <SafeAreaView style={{flex: 1}}>
+            <View style={{flex: 14}}>
+              <FlatList
+                  data={this.state.games}
+                  renderItem={
+                    ({item}) => this.toGameEntry(item)
+                  }
+                  keyExtractor={item => this.toDate(item.timestamp)}
               />
             </View>
+            <View style={styles.actionsContainer}>
+              <View style={styles.buttonContainer}>
+                <Button style={styles.button}
+                        title="Web"
+                        onPress={this.open}
+                />
+              </View>
+              <View style={styles.buttonContainer}>
+                <Button
+                    title={'Add game'}
+                    onPress={() => this.changePage('add')}
+                />
+              </View>
+            </View>
+          </SafeAreaView>
+      );
+    } else if (this.state.page === 'add') {
+      return (
+          <SafeAreaView style={{flex: 1}}>
+            <View style={{flex: 14}}>
+              <Team element={this.state.blaus}
+                    availablePlayers={this.state.availablePlayers}
+                    onAddPlayer={this.addPlayer}
+                    onChangeScore={this.changeScore}
+                    onIncPlayerGoals={this.incPlayerGoals}
+                    style={styles.blausBackground}/>
+              <Team element={this.state.grocs}
+                    availablePlayers={this.state.availablePlayers}
+                    onAddPlayer={this.addPlayer}
+                    onChangeScore={this.changeScore}
+                    onIncPlayerGoals={this.incPlayerGoals}
+                    style={styles.grocsBackground}/>
+            </View>
+            <View style={styles.actionsContainer}>
 
-            <View style={styles.buttonContainer}>
-              <Button style={styles.button}
-                      title="Reset"
-                      onPress={this.reset}
-              />
-            </View>
+              <View style={styles.buttonContainer}>
+                <Button style={styles.button}
+                        title="Cancel"
+                        onPress={() => {
+                          this.reset();
+                          this.changePage('list');
+                        }}
+                />
+              </View>
 
-            <View style={styles.buttonContainer}>
-              <Button
-                  disabled={this.state.serverStatus !== 'UP'}
-                  title={this.state.serverStatus === 'UP' ? 'Submit'
-                      : 'Loading...'}
-                  onPress={this.save}
-              />
+              <View style={styles.buttonContainer}>
+                <Button
+                    disabled={this.state.serverStatus !== 'UP'}
+                    title={this.state.serverStatus === 'UP' ? 'Submit'
+                        : 'Loading...'}
+                    onPress={this.save}
+                />
+              </View>
             </View>
+          </SafeAreaView>
+      );
+    } else {
+      return (
+          <View style={styles.centeredContainer}>
+            <ActivityIndicator size="large" color="#0000ff"/>
           </View>
-        </SafeAreaView>
-    );
+      );
+    }
   }
 }
 

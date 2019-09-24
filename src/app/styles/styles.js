@@ -37,6 +37,19 @@ const styles = StyleSheet.create({
     fontFamily: 'Cochin',
     fontSize: 16
   },
+  centeredContainer: {
+    flex: 1,
+    justifyContent: 'center'
+  },
+  grocsBackground: {
+    backgroundColor: 'lightyellow'
+  },
+  blausBackground: {
+    backgroundColor: 'powderblue'
+  },
+  neutralBackground: {
+    backgroundColor: 'lightgray'
+  }
 });
 
 export default styles;
