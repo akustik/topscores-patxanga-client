@@ -4,12 +4,12 @@ import {
   Alert,
   Button,
   FlatList,
+  Linking,
   Picker,
   SafeAreaView,
   StyleSheet,
   Text,
-  View,
-  Linking
+  View
 } from 'react-native';
 
 import Slider from '@react-native-community/slider';
@@ -20,6 +20,7 @@ const PLAYERS = [
   "Albert",
   "Antonio",
   "Arnau",
+  "Arturo",
   "Erik",
   "Fede",
   "Fran",
@@ -41,13 +42,6 @@ const teamFor = (team, score, players) => {
   }
 };
 
-const INITIAL_STATE = {
-  blaus: teamFor('blaus'),
-  grocs: teamFor('grocs'),
-  serverStatus: 'DOWN',
-  availablePlayers: PLAYERS
-};
-
 class TeamMember extends Component {
   render() {
     const teamName = this.props.team;
@@ -57,10 +51,13 @@ class TeamMember extends Component {
     return (
         <View style={styles.actionsContainer}>
           <View style={styles.playerContainer}>
-            <Text style={styles.playerText}>{'\u2022 ' + playerName} ({playerGoals})</Text>
+            <Text style={styles.playerText}>{'\u2022 '
+            + playerName} ({playerGoals})</Text>
           </View>
           <View style={styles.playerContainer}>
-            <Button title="+" onPress={() => this.props.onIncPlayerGoals(teamName, playerName)}/>
+            <Button title="+"
+                    onPress={() => this.props.onIncPlayerGoals(teamName,
+                        playerName)}/>
           </View>
         </View>
     )
@@ -76,7 +73,8 @@ class Team extends Component {
         <View style={combineStyles}>
           <View style={styles.actionsContainer}>
             <View style={styles.teamTitleElement}>
-              <Text style={styles.titleText}>{teamName} ({this.props.element.score})</Text>
+              <Text
+                  style={styles.titleText}>{teamName} ({this.props.element.score})</Text>
             </View>
             <View style={styles.teamTitleElement}>
               <Slider
@@ -133,7 +131,12 @@ class Game extends Component {
     this.incPlayerGoals = this.incPlayerGoals.bind(this);
   }
 
-  state = INITIAL_STATE;
+  state = {
+    serverStatus: 'DOWN',
+    blaus: teamFor('blaus'),
+    grocs: teamFor('grocs'),
+    availablePlayers: PLAYERS
+  };
 
   componentDidMount() {
     setInterval(() => {
@@ -149,7 +152,9 @@ class Game extends Component {
           previous[team].players.concat({
             name: player
           }));
-      updated.availablePlayers = previous.availablePlayers.filter((v) => { return v !== player} );
+      updated.availablePlayers = previous.availablePlayers.filter((v) => {
+        return v !== player
+      });
       return updated;
     })
   }
@@ -168,7 +173,7 @@ class Game extends Component {
       let updated = {};
       updated[team] = teamFor(team, previous[team].score,
           previous[team].players.map((p => {
-            if(p.name === player) {
+            if (p.name === player) {
               //TODO: Clone
               return {
                 name: player,
@@ -229,8 +234,8 @@ class Game extends Component {
     let game = {
       tournament: '2019-2020',
       parties: [
-          this.toParty(this.state.blaus),
-          this.toParty(this.state.grocs)
+        this.toParty(this.state.blaus),
+        this.toParty(this.state.grocs)
       ]
     };
 
@@ -258,8 +263,13 @@ class Game extends Component {
   }
 
   reset() {
-    this.setState(() => INITIAL_STATE)
-    this.updateServerStatus();
+    this.setState(() => {
+      return {
+        blaus: teamFor('blaus'),
+        grocs: teamFor('grocs'),
+        availablePlayers: PLAYERS
+      }
+    })
   }
 
   open() {
@@ -301,7 +311,8 @@ class Game extends Component {
             <View style={styles.buttonContainer}>
               <Button
                   disabled={this.state.serverStatus !== 'UP'}
-                  title={this.state.serverStatus === 'UP'? 'Submit': 'Loading...'}
+                  title={this.state.serverStatus === 'UP' ? 'Submit'
+                      : 'Loading...'}
                   onPress={this.save}
               />
             </View>
