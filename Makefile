@@ -7,3 +7,6 @@ run-android-release:
 create-keystore:
 	keytool -genkeypair -v -keystore patxanga.keystore -storepass patxanga -alias patxanga -keyalg RSA -keysize 2048 -validity 10000
 	mv patxanga.keystore android/app
+
+setup-repo:
+	git update-index --assume-unchanged src/app/config/config.js

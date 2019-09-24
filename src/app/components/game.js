@@ -265,22 +265,20 @@ class Game extends Component {
 
   list() {
     fetch(URL + 'games/list', {
-      method: 'POST',
+      method: 'GET',
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
         'Authorization': 'Basic ' + SECRET
-      },
-      body: JSON.stringify(this.toGame()),
+      }
     }).then((responseJson) => {
       if (responseJson.status !== 200) {
         Alert.alert('Failed', JSON.stringify(responseJson));
       } else {
-        responseJson.json().then((json) => {
+        responseJson.json().then((jsonArray) => {
           this.setState(() => {
-            Alert.alert('list', json);
             return {
-              games: json,
+              games: jsonArray,
               serverStatus: 'UP'
             };
           });
